@@ -661,6 +661,25 @@ def lint_metrics(
             )
 
         for _metric_name, metric in sorted(list(category_metrics.items())):
+            if metric.no_lint:
+                known_lint_names = (
+                    set(METRIC_CHECKS.keys())
+                    | set(ALL_OBJECT_CHECKS.keys())
+                    | set(CATEGORY_CHECKS.keys())
+                )
+                unknown_lints = [
+                    lint for lint in metric.no_lint if lint not in known_lint_names
+                ]
+                if unknown_lints:
+                    nits.append(
+                        GlinterNit(
+                            "UNKNOWN_LINT",
+                            ".".join([metric.category, metric.name]),
+                            f"Metric contains unknown no_lints: {unknown_lints}. Please remove the `no_lint` entry.",
+                            CheckType.warning,
+                        )
+                    )
+
             for check_name, (check_func, check_type) in METRIC_CHECKS.items():
                 new_nits = list(check_func(metric, parser_config))
                 if check_name in metric.no_lint and not len(new_nits):
